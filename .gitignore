@@ -1,0 +1,12 @@
+# OS files
+Thumbs.db
+Desktop.ini
+
+# Local environment
+node_modules/
+.env
+.DS_Store
+
+# Brain/Session artifacts (Optional: keeps repo clean of agent notes)
+.gemini/
+brain/

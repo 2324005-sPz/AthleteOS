@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AthleteOS — AI Workout Tracker</title>
+    <meta name="description"
+        content="AI-powered workout tracker for all athletic qualities, biomarkers, and sporting disciplines." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <!-- ─── Authentication Overlay ────────────────────────── -->
+    <div id="auth-overlay" class="auth-overlay">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="logo-name">AthleteOS</div>
+                <div class="logo-tagline">Elite Performance Tracker</div>
+            </div>
+            <div id="auth-view-login">
+                <h2>Welcome Back</h2>
+                <p class="auth-subtitle">Login to sync your performance data</p>
+                <div class="field-group">
+                    <label>Email</label>
+                    <input type="email" id="auth-email" placeholder="athlete@example.com" />
+                </div>
+                <div class="field-group">
+                    <label>Password</label>
+                    <input type="password" id="auth-password" placeholder="••••••••" />
+                </div>
+                <button class="btn-primary w-100" id="btn-login">Login</button>
+                <div class="auth-footer">
+                    <p class="auth-toggle">New athlete? <a href="#" id="link-show-register">Create account</a></p>
+                    <p class="auth-toggle admin-only" style="display:none"><a href="#" id="link-show-config"
+                            class="muted">⚙️ Configure Supabase</a></p>
+                </div>
+            </div>
+
+            <div id="auth-view-register" style="display:none">
+                <h2>Join AthleteOS</h2>
+                <p class="auth-subtitle">Start your professional tracking journey</p>
+                <div class="field-group">
+                    <label>Registration Email</label>
+                    <input type="email" id="reg-email" placeholder="athlete@example.com" />
+                </div>
+                <div class="field-group">
+                    <label>Password (min 6 chars)</label>
+                    <input type="password" id="reg-password" placeholder="••••••••" />
+                </div>
+                <button class="btn-primary w-100" id="btn-register">Initialize Athlete Account</button>
+                <div class="auth-footer">
+                    <p class="auth-toggle">Already tracking? <a href="#" id="link-show-login">Login here</a></p>
+                    <p class="auth-toggle admin-only" style="display:none"><a href="#" id="link-show-config-reg"
+                            class="muted">⚙️ Configure Supabase</a></p>
+                </div>
+            </div>
+
+            <div id="auth-view-config" style="display:none">
+                <h2>Backend Config</h2>
+                <p class="auth-subtitle">Enter your Supabase project details</p>
+                <div class="field-group">
+                    <label>Supabase URL</label>
+                    <input type="text" id="auth-sb-url" placeholder="https://xyz.supabase.co" />
+                </div>
+                <div class="field-group">
+                    <label>Supabase Anon Key</label>
+                    <input type="password" id="auth-sb-key" placeholder="eyJhbG..." />
+                </div>
+                <button class="btn-primary w-100" id="btn-auth-save-config">Save & Connect</button>
+                <p class="auth-toggle"><a href="#" id="link-back-to-login">← Back to Login</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── Sidebar ─────────────────────────────────────────── -->
+    <div id="sidebar-overlay"></div>
+    <nav id="sidebar" role="navigation" aria-label="Main Navigation">
+        <div class="sidebar-logo">
+            <div class="logo-icon">⚡</div>
+            <div>
+                <div class="logo-name">AthleteOS</div>
+                <div class="logo-tagline">AI Performance Engine</div>
+            </div>
+        </div>
+        <div class="nav-section">
+            <div class="nav-label">Overview</div>
+            <button class="nav-item active" data-view="dashboard" aria-label="Go to Dashboard">
+                <i class="ph ph-squares-four"></i><span>Dashboard</span>
+            </button>
+            <button class="nav-item" data-view="analytics" aria-label="Go to Analytics">
+                <i class="ph ph-chart-line-up"></i><span>Analytics</span>
+            </button>
+        </div>
+        <div class="nav-section">
+            <div class="nav-label">Training</div>
+            <button class="nav-item" data-view="logger" aria-label="Open Workout Logger">
+                <i class="ph ph-barbell"></i><span>Workout Logger</span>
+            </button>
+            <button class="nav-item" data-view="library" aria-label="Browse Exercise Library">
+                <i class="ph ph-books"></i><span>Exercise Library</span>
+            </button>
+        </div>
+        <div class="nav-section">
+            <div class="nav-label">Intelligence</div>
+            <button class="nav-item" data-view="coach" aria-label="Chat with AI Coach">
+                <i class="ph ph-robot"></i><span>AI Coach</span>
+            </button>
+            <button class="nav-item" data-view="biomarkers" aria-label="Track Biomarkers">
+                <i class="ph ph-heartbeat"></i><span>Biomarkers</span>
+            </button>
+        </div>
+        <div class="nav-section">
+            <div class="nav-label">Account</div>
+            <button class="nav-item" data-view="profile" aria-label="View Athlete Profile">
+                <i class="ph ph-user-circle"></i><span>Profile</span>
+            </button>
+            <button class="nav-item" data-view="settings" aria-label="App Settings">
+                <i class="ph ph-gear"></i><span>Settings</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Rest Timer Overlay -->
+    <div id="rest-timer-overlay" class="rest-timer-card" style="display:none">
+        <div class="timer-header">Rest Timer</div>
+        <div id="rest-timer-display" class="timer-display">02:00</div>
+        <div class="timer-controls">
+            <button class="btn-sm" onclick="adjustTimer(-15)">-15s</button>
+            <button class="btn-sm" onclick="adjustTimer(15)">+15s</button>
+            <button class="btn-sm danger" id="btn-skip-timer"><i class="ph ph-stop"></i> Skip</button>
+        </div>
+    </div>
+
+    <!-- ─── Main Content ────────────────────────────────────────── -->
+    <main class="main-wrap">
+        <header class="topbar">
+            <button id="hamburger" class="hamburger"><i class="ph ph-list"></i></button>
+            <div class="topbar-title" id="topbar-title">Dashboard</div>
+            <div class="topbar-right">
+                <span class="topbar-badge" id="topbar-sport">General Fitness</span>
+            </div>
+        </header>
+
+        <!-- ══════════════════════════════════════════════════════
+         VIEW: DASHBOARD
+    ═══════════════════════════════════════════════════════ -->
+        <section id="view-dashboard" class="view active-view">
+            <div class="view-header">
+                <div>
+                    <h1 id="dash-greeting">Welcome back, Athlete 👋</h1>
+                    <p class="subtitle" id="dash-sport">General Fitness</p>
+                </div>
+            </div>
+
+            <!-- Stat cards -->
+            <div class="stats-grid">
+                <div class="stat-card accent-purple stagger-item delay-1">
+                    <div class="stat-icon"><i class="ph ph-fire"></i></div>
+                    <div class="stat-body">
+                        <div class="stat-val" id="dash-streak">0 days</div>
+                        <div class="stat-label">Training Streak</div>
+                    </div>
+                </div>
+                <div class="stat-card accent-green stagger-item delay-2">
+                    <div class="stat-icon"><i class="ph ph-barbell"></i></div>
+                    <div class="stat-body">
+                        <div class="stat-val" id="dash-total-workouts">0</div>
+                        <div class="stat-label">Total Workouts</div>
+                    </div>
+                </div>
+                <div class="stat-card accent-amber stagger-item delay-3">
+                    <div class="stat-icon"><i class="ph ph-trophy"></i></div>
+                    <div class="stat-body">
+                        <div class="stat-val" id="dash-prs-count">—</div>
+                        <div class="stat-label">Personal Records</div>
+                    </div>
+                </div>
+                <div class="stat-card accent-blue stagger-item delay-4">
+                    <div class="stat-icon"><i class="ph ph-heartbeat"></i></div>
+                    <div class="stat-body">
+                        <div class="stat-val" id="dash-bm-count">—</div>
+                        <div class="stat-label">Biomarkers Tracked</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI tip + quick action -->
+            <div class="dash-row">
+                <div class="card ai-tip-card stagger-item delay-5">
+                    <div class="card-header">
+                        <i class="ph ph-robot"></i>
+                        <span>AI Daily Tip</span>
+                    </div>
+                    <p id="dash-ai-tip" class="ai-tip-text">Loading your personalized tip...</p>
+                </div>
+                <div class="card quick-start-card">
+                    <div class="card-header">
+                        <i class="ph ph-lightning"></i>
+                        <span>Quick Start</span>
+                    </div>
+                    <div class="quick-actions">
+                        <button class="btn-primary full-w"
+                            onclick="document.querySelector('[data-view=logger]').click()">
+                            <i class="ph ph-barbell"></i> Start Workout
+                        </button>
+                        <button class="btn-secondary full-w"
+                            onclick="document.querySelector('[data-view=coach]').click()">
+                            <i class="ph ph-robot"></i> Ask AI Coach
+                        </button>
+                        <button class="btn-secondary full-w"
+                            onclick="document.querySelector('[data-view=biomarkers]').click()">
+                            <i class="ph ph-heartbeat"></i> Log Biomarker
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent workouts + PRs -->
+            <div class="dash-row">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="ph ph-clock-counter-clockwise"></i>
+                        <span>Recent Workouts</span>
+                    </div>
+                    <div id="dash-recent"></div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <i class="ph ph-medal"></i>
+                        <span>Top PRs</span>
+                    </div>
+                    <div id="dash-prs"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════════
+         VIEW: WORKOUT LOGGER
+    ═══════════════════════════════════════════════════════ -->
+        <section id="view-logger" class="view">
+            <div class="view-header">
+                <div>
+                    <h1>Workout Logger</h1>
+                    <p class="subtitle">Log sets, reps, and get AI coaching in real-time</p>
+                </div>
+            </div>
+
+            <!-- Empty state -->
+            <div id="workout-empty-state" class="empty-state">
+                <div class="empty-icon"><i class="ph ph-barbell"></i></div>
+                <h2>No active workout</h2>
+                <p>Start a new session to begin logging your training.</p>
+                <button class="btn-primary" id="btn-start-workout">
+                    <i class="ph ph-play"></i> Start New Workout
+                </button>
+            </div>
+
+            <!-- Active workout -->
+            <div id="workout-logger" style="display:none">
+                <div class="workout-toolbar">
+                    <div class="ex-search-wrap">
+                        <i class="ph ph-magnifying-glass"></i>
+                        <input id="ex-search" type="text" placeholder="Search exercises..." autocomplete="off" />
+                        <div id="ex-dropdown" class="ex-dropdown"></div>
+                    </div>
+                    <div class="workout-toolbar-right">
+                        <button class="btn-secondary" id="btn-cancel-workout"><i class="ph ph-x"></i>
+                            Cancel</button>
+                        <button class="btn-primary" id="btn-finish-workout"><i class="ph ph-check"></i>
+                            Finish</button>
+                    </div>
+                </div>
+
+                <div id="exercises-container"></div>
+
+                <div class="card" style="margin-top:1rem">
+                    <div class="card-header"><i class="ph ph-note"></i><span>Session Notes</span></div>
+                    <textarea id="workout-notes" class="notes-input"
+                        placeholder="How did it feel? PRs, energy level, technique notes..."></textarea>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════════
+         VIEW: AI COACH
+    ═══════════════════════════════════════════════════════ -->
+        <section id="view-coach" class="view">
+            <div class="view-header">
+                <div>
+                    <h1>AI Coach</h1>
+                    <p class="subtitle">Your personal Gemini-powered strength & conditioning expert</p>
+                </div>
+                <div class="view-header-actions">
+                    <button class="btn-secondary" id="btn-gen-plan"><i class="ph ph-calendar"></i> Generate
+                        Plan</button>
+                    <button class="btn-secondary" id="btn-clear-chat"><i class="ph ph-trash"></i> Clear</button>
+                </div>
+            </div>
+
+            <div class="chat-container">
+                <div id="chat-messages" class="chat-messages">
+                    <div class="chat-bubble ai-bubble welcome-bubble">
+                        <strong>👋 Hey! I'm your AI Coach.</strong>
+                        <p>I know your sport, goals, recent workouts, and biomarkers. Ask me anything about
+                            training,
+                            nutrition, recovery, or periodization — I'll give you evidence-based, personalized
+                            advice.
+                        </p>
+                        <p class="muted-sm">💡 Try: "Design a 4-week power phase for me" or "Why are my lifts
+                            stalling?"
+                        </p>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <textarea id="chat-input" rows="1" placeholder="Ask your AI Coach anything..."></textarea>
+                    <button class="btn-send" id="btn-send-chat"><i class="ph ph-paper-plane-right"></i></button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════════
+         VIEW: BIOMARKERS
+    ═══════════════════════════════════════════════════════ -->
+        <section id="view-biomarkers" class="view">
+            <div class="view-header">
+                <div>
+                    <h1>Biomarker Tracker</h1>
+                    <p class="subtitle">Monitor every trainable performance metric</p>
+                </div>
+            </div>
+
+            <div class="bm-layout">
+                <!-- Log panel -->
+                <div class="card bm-log-card">
+                    <div class="card-header"><i class="ph ph-plus-circle"></i><span>Log Biomarker</span></div>
+                    <div class="field-group">
+                        <label>Category</label>
+                        <div id="bm-categories" class="bm-cats"></div>
+                    </div>
+                    <div class="field-group">
+                        <label>Metric</label>
+                        <select id="bm-name" onchange="updateBMUnit()"></select>
+                    </div>
+                    <div class="field-row">
+                        <div class="field-group flex-1">
+                            <label>Value <span id="bm-unit-label" class="unit-label"></span></label>
+                            <input type="number" id="bm-value" step="0.1" placeholder="0.0" />
+                        </div>
+                        <div class="field-group">
+                            <label>Date</label>
+                            <input type="date" id="bm-date" />
+                        </div>
+                    </div>
+                    <button class="btn-primary full-w" id="btn-log-bm"><i class="ph ph-floppy-disk"></i> Log
+                        Entry</button>
+                    <button class="btn-secondary full-w" id="btn-analyze-bio" style="margin-top:.5rem"><i
+                            class="ph ph-robot"></i> AI Analysis</button>
+                    <div id="bio-analysis-result" class="bio-analysis" style="display:none"></div>
+                </div>
+
+                <!-- History panel -->
+                <div class="card bm-history-card">
+                    <div class="card-header"><i class="ph ph-list-bullets"></i><span>Recent Entries</span></div>
+                    <div id="bm-recent-list"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════════
+         VIEW: ANALYTICS
+    ═══════════════════════════════════════════════════════ -->
+        <section id="view-analytics" class="view">
+            <div class="view-header">
+                <div>
+                    <h1>Progress Analytics</h1>
+                    <p class="subtitle">Visualize your performance trajectory</p>
+                </div>
+            </div>
+
+            <div id="analytics-empty" class="empty-state" style="display:none">
+                <div class="empty-icon"><i class="ph ph-chart-line-up"></i></div>
+                <h2>No data yet</h2>
+                <p>Log at least one workout session to see your analytics.</p>
+            </div>
+
+            <div class="card" style="margin-bottom:1.5rem">
+                <div class="card-header"><i class="ph ph-chart-bar"></i><span>Weekly Training Volume</span>
+                </div>
+                <div class="chart-wrap"><canvas id="chart-volume"></canvas></div>
+            </div>
+
+            <div class="card" style="margin-bottom:1.5rem">
+                <div class="card-header"><i class="ph ph-ranking"></i><span>Volume by Exercise</span></div>
+                <div class="chart-wrap"><canvas id="chart-exercises"></canvas></div>
+            </div>
+
+            <!-- Biomarker History Charts -->
+            <div id="analytics-charts-grid"></div>
+
+            <div class="card">
+                <div class="card-header"><i class="ph ph-medal"></i><span>Personal Records</span></div>
+                <div class="table-scroll">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Exercise</th>
+                                <th>Best Weight</th>
+                                <th>Best Reps</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pr-table-body"></tbody>
+                    </table>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════════
+         VIEW: EXERCISE LIBRARY
+    ═══════════════════════════════════════════════════════ -->
+        <section id="view-library" class="view">
+            <div class="view-header">
+                <div>
+                    <h1>Exercise Library</h1>
+                    <p class="subtitle">Browse all exercises categorized by athletic quality</p>
+                </div>
+            </div>
+
+            <div class="lib-toolbar">
+                <div class="search-wrap">
+                    <i class="ph ph-magnifying-glass"></i>
+                    <input id="lib-search" type="text" placeholder="Search exercises, muscles, qualities..." />
+                </div>
+            </div>
+            <div id="quality-chips" class="chips-row"></div>
+            <div id="library-grid" class="library-grid"></div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════════
+         VIEW: PROFILE
+    ═══════════════════════════════════════════════════════ -->
+        <section id="view-profile" class="view">
+            <div class="view-header">
+                <div>
+                    <h1>Athlete Profile</h1>
+                    <p class="subtitle">Your training identity and goals</p>
+                </div>
+            </div>
+
+            <div class="card profile-card">
+                <div class="profile-avatar">
+                    <i class="ph ph-user-circle-gear"></i>
+                </div>
+                <div class="profile-form">
+                    <div class="field-row">
+                        <div class="field-group flex-1">
+                            <label>Name</label>
+                            <input type="text" id="prof-name" placeholder="Your name" />
+                        </div>
+                        <div class="field-group">
+                            <label>Age</label>
+                            <input type="number" id="prof-age" placeholder="25" min="10" max="100" />
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div class="field-group flex-1">
+                            <label>Weight (kg)</label>
+                            <input type="number" id="prof-weight" step="0.5" placeholder="80" />
+                        </div>
+                        <div class="field-group flex-1">
+                            <label>Height (cm)</label>
+                            <input type="number" id="prof-height" placeholder="180" />
+                        </div>
+                    </div>
+                    <div class="field-group">
+                        <label>Primary Sport</label>
+                        <select id="prof-sport"></select>
+                    </div>
+                    <div class="field-group">
+                        <label>Training Goal</label>
+                        <select id="prof-goal"></select>
+                    </div>
+                    <div class="field-group">
+                        <label>Experience Level</label>
+                        <select id="prof-exp"></select>
+                    </div>
+                    <button class="btn-primary" id="btn-save-profile"><i class="ph ph-floppy-disk"></i>
+                        Save
+                        Profile</button>
+                </div>
+            </div>
+
+            <!-- Athletic qualities -->
+            <div class="card" style="margin-top:1.5rem">
+                <div class="card-header"><i class="ph ph-dna"></i><span>Athletic Qualities
+                        Overview</span></div>
+                <div class="qualities-grid">
+                    <div class="quality-pill strength">💪 Maximal Strength</div>
+                    <div class="quality-pill strength">⚖️ Relative Strength</div>
+                    <div class="quality-pill power">⚡ Power & Explosiveness</div>
+                    <div class="quality-pill speed">💨 Speed & Agility</div>
+                    <div class="quality-pill endurance">🫁 Aerobic Endurance</div>
+                    <div class="quality-pill endurance">🔥 Anaerobic Capacity</div>
+                    <div class="quality-pill endurance">🏋️ Muscular Endurance</div>
+                    <div class="quality-pill mobility">🤸 Mobility & Flexibility</div>
+                    <div class="quality-pill skill">🎯 Skill & Coordination</div>
+                    <div class="quality-pill body">🏆 Body Composition</div>
+                    <div class="quality-pill recovery">😴 Recovery & Wellness</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════════
+         VIEW: SETTINGS
+    ═══════════════════════════════════════════════════════ -->
+        <section id="view-settings" class="view">
+            <div class="view-header">
+                <div>
+                    <h1>Settings</h1>
+                    <p class="subtitle">Configure your AI Coach and manage your data</p>
+                </div>
+            </div>
+
+            <!-- Supabase Connection (Admin Only) -->
+            <div id="admin-config-card" class="card settings-card admin-only" style="margin-top:1.5rem; display:none">
+                <div class="card-header"><i class="ph ph-database"></i><span>Supabase Backend (Admin
+                        Override)</span>
+                </div>
+                <p class="settings-desc">Link a specific project to enable multi-device sync and
+                    secure AI proxying.
+                </p>
+                <div class="field-group">
+                    <label>Supabase Project URL</label>
+                    <input type="text" id="sb-url-input" placeholder="https://xyz.supabase.co" />
+                </div>
+                <div class="field-group">
+                    <label>Supabase Anon Key</label>
+                    <input type="password" id="sb-key-input" placeholder="eyJhbG..." />
+                </div>
+                <button class="btn-primary w-100" id="btn-save-sb">Save Connection &
+                    Initialize</button>
+            </div>
+
+            <!-- API Key -->
+            <div class="card settings-card">
+                <div class="card-header"><i class="ph ph-key"></i><span>Gemini API Key</span></div>
+                <p class="settings-desc">Your key is stored only in your browser (localStorage). <a
+                        href="https://aistudio.google.com/apikey" target="_blank" class="link">Get a
+                        free key →</a>
+                </p>
+                <div class="field-group">
+                    <label>Display (masked)</label>
+                    <input type="text" id="api-key-input" placeholder="Enter your Gemini API key" readonly
+                        onclick="this.nextElementSibling.focus()" />
+                </div>
+                <div class="field-group">
+                    <label>API Key (type here)</label>
+                    <input type="password" id="api-key-real" placeholder="AIza..." autocomplete="off" />
+                </div>
+                <button class="btn-primary" id="btn-save-api"><i class="ph ph-key"></i> Save API
+                    Key</button>
+            </div>
+
+            <!-- Data management -->
+            <div class="card settings-card">
+                <div class="card-header"><i class="ph ph-database"></i><span>Data Management</span>
+                </div>
+                <p class="settings-desc">Export your data as JSON for backup or future migration to
+                    a cloud backend.
+                </p>
+                <div class="settings-actions">
+                    <button class="btn-secondary" id="btn-export"><i class="ph ph-export"></i>
+                        Export Data</button>
+                    <button class="btn-secondary" id="btn-import"><i class="ph ph-import"></i>
+                        Import Data</button>
+                    <input type="file" id="import-file" accept=".json" style="display:none" />
+                </div>
+            </div>
+
+            <!-- About -->
+            <div class="card settings-card">
+                <div class="card-header"><i class="ph ph-info"></i><span>About AthleteOS</span>
+                </div>
+                <p class="settings-desc">Built for serious athletes who want to track every
+                    dimension of
+                    performance.
+                    Currently personal-use with a localStorage backend — designed to scale to a full
+                    cloud SaaS.</p>
+                <div class="about-badges">
+                    <span class="badge">v1.0.0</span>
+                    <span class="badge">Gemini 2.0 Flash</span>
+                    <span class="badge">No Backend Required</span>
+                    <span class="badge">Export & Import Ready</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
+    <script type="module" src="app.js"></script>
+</body>
+
+</html>
